@@ -1,0 +1,55 @@
+#define BLYNK_TEMPLATE_ID "TMPL34Rng0FvB" // Your Blynk template ID
+#define BLYNK_TEMPLATE_NAME "LPG" // Name of your Blynk template
+#define BLYNK_PRINT Serial // Define the output for Blynk library messages
+
+#include <ESP8266WiFi.h> // Include the ESP8266 WiFi library
+#include <BlynkSimpleEsp8266.h> // Include the Blynk library for ESP8266
+
+char auth[] = "k07J8SvCYCwmGQkGZCeKym6z-2ZmlABx"; // Replace with your Blynk Auth Token
+char ssid[] = "Nord2"; // Replace with your WiFi SSID
+char pass[] = "lebhikarile"; // Replace with your WiFi password
+
+int buzzer = D1; // Buzzer connected to digital pin D1
+int sensor = A0; // Gas sensor connected to analog pin A0
+int led_green = D5; // Green LED indicator for no gas leakage connected to digital pin D5
+int led_red = D6; // Red LED indicator for gas leakage connected to digital pin D6
+
+int sensor_limit = 875; // Define the threshold value for gas leakage detection
+
+void setup() {
+  pinMode(buzzer, OUTPUT); // Set the buzzer pin as an output
+  pinMode(sensor, INPUT); // Set the gas sensor pin as an input
+  pinMode(led_green, OUTPUT); // Set the green LED pin as an output
+  pinMode(led_red, OUTPUT); // Set the red LED pin as an output
+  digitalWrite(led_green, LOW); // Turn off the green LED initially
+  digitalWrite(led_red, LOW); // Turn off the red LED initially
+  Serial.begin(9600); // Start the serial communication at a baud rate of 9600
+  Blynk.begin(auth, ssid, pass); // Initialize Blynk with your authentication and Wi-Fi credentials
+}
+
+void loop() {
+  int sensor_value = analogRead(sensor); // Read the analog value from the gas sensor
+  Serial.print("Gas Level: "); // Print a message to Serial Monitor
+  Serial.println(sensor_value); // Print the sensor value to Serial Monitor
+  Blynk.virtualWrite(V1, sensor_value); // Send the sensor value to Blynk's virtual pin V1
+
+  // Check if the gas level has reached the threshold value
+  if (sensor_value > sensor_limit) {
+    digitalWrite(led_green, HIGH); // Turn on the green LED
+    digitalWrite(led_red, LOW); // Turn off the red LED
+    digitalWrite(buzzer, LOW); // Turn on the buzzer
+    delay(500); // Delay for 500 milliseconds
+    
+    // Use virtualWrite to send a value to a virtual pin that triggers a notification
+    Blynk.virtualWrite(V2, 1); // Set virtual pin V2 to 1 to trigger a notification
+  } else {
+    digitalWrite(buzzer, HIGH); // Turn off the buzzer
+    digitalWrite(led_green, LOW); // Turn off the green LED
+    digitalWrite(led_red, HIGH); // Turn on the red LED
+    // Use virtualWrite to reset the notification
+    Blynk.virtualWrite(V2, 0); // Reset the notification by setting virtual pin V2 to 0
+  }
+
+  delay(100); // Add a short delay to avoid rapid sensor value changes
+  Blynk.run(); // Initiates Blynk to handle communication
+}
